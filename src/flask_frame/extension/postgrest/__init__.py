@@ -146,8 +146,12 @@ def proxy_request(
     send_headers = {}
     if headers:
         send_headers = (
-            {h[0]: h[1] for h in headers} if not isinstance(headers, dict) else headers
+            {h[0]: h[1] for h in headers} if not isinstance(headers, dict) else dict(headers)
         )
+        # hop-by-hop/body 声明头由 requests 自行管理，透传会导致无 body 的 DELETE 请求挂起（对端等待 body 直到超时）
+        for key in ("Content-Length", "Transfer-Encoding", "Connection", "Keep-Alive"):
+            send_headers.pop(key, None)
+            send_headers.pop(key.lower(), None)
         send_headers["Authorization"] = None
         send_headers["Host"] = None
 
